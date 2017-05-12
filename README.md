@@ -1,2 +1,2 @@
-# RnTrackLocApp
+# TrackLoc
 React Native Tracking Location App
