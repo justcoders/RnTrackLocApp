@@ -75,8 +75,8 @@ export default class TrackLoc extends Component {
   render() {
     return (
       <View style={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <LocationTrack interval={180000} setUpdateState={this.setUpdateState}/>
-        <LocationTrack trackingType={'byDistance'} distance={50} setUpdateState={this.setUpdateState}/>
+        <LocationTrack interval={300000} setUpdateState={this.setUpdateState}/>
+        <LocationTrack trackingType={'byDistance'} distance={1000} setUpdateState={this.setUpdateState}/>
         <Text>Received - From: {this.state.type}</Text>
         <Text>Latitude: {this.state.latitude}</Text>
         <Text>Longitude: {this.state.longitude}</Text>
