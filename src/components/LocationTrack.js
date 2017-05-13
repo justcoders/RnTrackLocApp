@@ -69,10 +69,7 @@ export default class LocationTrack extends Component {
 
   setLoc(type, position) {
     console.log(type, new Date());
-
     let next = position.coords;
-
-    this.sendLocation(type, next);
 
     this.props.setUpdateState({
       type: type,
@@ -81,24 +78,6 @@ export default class LocationTrack extends Component {
       speed: next.speed,
       error: null,
     });
-  }
-
-  async sendLocation(type, coords) {
-    try {
-      return await fetch('http://138.201.91.180:3000/', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type,
-          ...coords
-        })
-      })
-    } catch (error) {
-      console.error(error);
-    }
   }
 
   render() {

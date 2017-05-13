@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 
 import LocationTrack from './src/components/LocationTrack.js';
+import DeviceInfo from 'react-native-device-info';
 
 export default class TrackLoc extends Component {
   constructor(props) {
@@ -29,10 +30,12 @@ export default class TrackLoc extends Component {
     console.log(`setUpdateState ${this.count})`, next);
     this.count++;
 
-    let prev = this.state
+    let prev = this.state;
     let distance = (prev.latitude && prev.longitude)
       ? this.calcDistance(prev.latitude, prev.longitude, next.latitude, next.longitude)
       :0;
+
+    this.sendLocation(next);
 
     this.setState({
       ...next,
@@ -70,6 +73,25 @@ export default class TrackLoc extends Component {
     let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
     return R * c;
+  }
+
+  async sendLocation(data) {
+    try {
+      return await fetch('https://04u727i4b6.execute-api.us-east-1.amazonaws.com/stageTrackLoc/', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventTime: `${Date.now()}`,
+          deviceId: DeviceInfo.getDeviceId(),
+          ...data
+        })
+      })
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   render() {
