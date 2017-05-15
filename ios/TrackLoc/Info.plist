@@ -36,7 +36,11 @@
 		</dict>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>Location is required to find out where you are</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Location is required to find out where you are</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Location is required to find out where you are</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

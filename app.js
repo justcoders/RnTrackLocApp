@@ -1,11 +1,14 @@
 import React, { Component } from 'react';
 import {
-  Text,
-  View
+  View,
+  StyleSheet,
+  Text
 } from 'react-native';
 
 import LocationTrack from './src/components/LocationTrack.js';
 import DeviceInfo from 'react-native-device-info';
+
+import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
 
 export default class TrackLoc extends Component {
   constructor(props) {
@@ -13,42 +16,32 @@ export default class TrackLoc extends Component {
 
     this.state = {
       type: null,
-      latitude: null,
-      longitude: null,
+      latitude: 0,
+      longitude: 0,
       distance: 0,
       speed: 0,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.005,
+      trackingActive: false,
       error: null
     };
 
-    this.count = 0;
-
-    this.getLocation = this.getLocation.bind(this);
-    this.setUpdateState = this.setUpdateState.bind(this)
+    this.setUpdateState = this.setUpdateState.bind(this);
+    this.onRegionChange = this.onRegionChange.bind(this);
+    this.toggleTracking = this.toggleTracking.bind(this);
   }
 
-  setUpdateState(next){
-    console.log(`setUpdateState ${this.count})`, next);
-    this.count++;
-
-    let prev = this.state;
-    let distance = (prev.latitude && prev.longitude)
-      ? this.calcDistance(prev.latitude, prev.longitude, next.latitude, next.longitude)
-      :0;
-
-    this.sendLocation(next);
-
-    this.setState({
-      ...next,
-      distance
-    });
-  }
-
-  getLocation() {
+  componentDidMount(){
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        console.log('byButton', position.coords);
+        // this.map.initialRegion = {
+        //   latitude: position.coords.latitude,
+        //   longitude: position.coords.longitude,
+        //   latitudeDelta: this.state.latitudeDelta,
+        //   longitudeDelta: this.state.longitudeDelta,
+        // };
         this.setState({
-          type: 'byButton',
+          type: 'byStart',
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           speed: position.coords.speed,
@@ -59,20 +52,10 @@ export default class TrackLoc extends Component {
     );
   }
 
-  calcDistance(lat1, lon1, lat2, lon2) {
-    let R = 6371 * 1000; // radius of Earth, meters
-    let degreesToRad = Math.PI / 180;
-
-    let deltaLat = (lat2  - lat1) * degreesToRad;
-    let deltaLon = (lon2 - lon1) * degreesToRad;
-
-    let a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
-      Math.cos(lat1 * degreesToRad) * Math.cos(lat2 * degreesToRad) *
-      Math.sin(deltaLon/2) * Math.sin(deltaLon/2);
-
-    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-    return R * c;
+  setUpdateState(next){
+    console.log(`setUpdateState`, next);
+    this.sendLocation(next);
+    this.setState(next);
   }
 
   async sendLocation(data) {
@@ -94,20 +77,105 @@ export default class TrackLoc extends Component {
     }
   }
 
+  onRegionChange(region){
+    console.log(region);
+    this.setState({
+      latitude: region.latitude,
+      longitude: region.longitude,
+      latitudeDelta: region.latitudeDelta,
+      longitudeDelta: region.longitudeDelta
+    });
+  }
+
+  toggleTracking(){
+    this.setState({
+      trackingActive: !this.state.trackingActive
+    })
+  }
+
   render() {
     return (
-      <View style={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <LocationTrack interval={300000} setUpdateState={this.setUpdateState}/>
-        <LocationTrack trackingType={'byDistance'} distance={1000} setUpdateState={this.setUpdateState}/>
-        <Text>Received - From: {this.state.type}</Text>
-        <Text>Latitude: {this.state.latitude}</Text>
-        <Text>Longitude: {this.state.longitude}</Text>
-        <Text>Speed: {this.state.speed}</Text>
-        <Text>Distance: {this.state.distance}</Text>
-        {this.state.error ? <Text>Error: {this.state.error}</Text> : null}
-        <Text>==========================</Text>
-        <Text onPress={this.getLocation}>GetLocation</Text>
+      <View style={styles.container}>
+        <LocationTrack active={this.state.trackingActive}
+          trackingType={'byTimer'}
+          interval={60000}
+          setUpdateState={this.setUpdateState}/>
+        <LocationTrack active={this.state.trackingActive}
+          trackingType={'byDistance'}
+          distance={1000}
+          setUpdateState={this.setUpdateState}/>
+        <MapView
+            ref={(ref) => (this.map = ref)}
+            provider={PROVIDER_GOOGLE}
+            style={styles.map}
+            onRegionChange={this.onRegionChange}
+            region={{
+              latitude: this.state.latitude,
+              longitude: this.state.longitude,
+              latitudeDelta: this.state.latitudeDelta,
+              longitudeDelta: this.state.longitudeDelta,
+            }}
+            showsUserLocation={true}
+            followsUserLocation={true}
+        >
+          <MapView.Marker coordinate={{latitude:this.state.latitude, longitude: this.state.longitude}} />
+        </MapView>
+        {!this.state.trackingActive
+          ? <View style={[styles.bubble, styles.latlng]}>
+              <Text onPress={this.toggleTracking} style={styles.labelTxt}>Start Tracking</Text>
+            </View>
+          : <View style={styles.toolbarContainer}>
+              <View style={[styles.bubble, styles.latlng]}>
+                <Text style={styles.labelTxt}>
+                  {this.state.latitude.toPrecision(7)},
+                  {this.state.longitude.toPrecision(7)}
+                </Text>
+              </View>
+              <View style={[styles.bubble, styles.latlng]}>
+                <Text onPress={this.toggleTracking} style={styles.labelTxt}>Stop Tracking</Text>
+              </View>
+            </View>
+        }
       </View>
     );
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  toolbarContainer: {
+    flexDirection: 'row',
+    marginVertical: 20,
+    backgroundColor: 'transparent',
+    justifyContent: 'space-around'
+  },
+  bubble: {
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 20,
+    marginVertical: 20,
+    marginHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(30,144,255,0.3)',
+  },
+  latlng: {
+    width: 200,
+    alignItems: 'stretch'
+  },
+  button: {
+    width: 150,
+  },
+  labelTxt: {
+    textAlign: 'center',
+    fontWeight: 'bold',
+    color: 'dodgerblue'
+  }
+});

@@ -3,19 +3,21 @@ import React, { Component } from 'react';
 export default class LocationTrack extends Component {
 
   static defaultProps = {
+    active: true,
     trackingType: 'byTimer',
-    trackingOptions: {enableHighAccuracy: true, timeout: 20000, maximumAge: 1000},
+    trackingOptions: {enableHighAccuracy: true, timeout: 20000, maximumAge: 200},
     interval: 60000,
     distance: 200
-  }
+  };
 
   static propTypes = {
+    active: React.PropTypes.bool,
     trackingType: React.PropTypes.oneOf(['byTimer', 'byDistance']).isRequired,
     trackingOptions: React.PropTypes.object.isRequired,
     interval: React.PropTypes.number,
     distance: React.PropTypes.number,
     setUpdateState: React.PropTypes.func
-  }
+  };
 
   constructor(props) {
     super(props);
@@ -41,21 +43,25 @@ export default class LocationTrack extends Component {
 
   byTimerTracking() {
     this.intervalId = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          this.setLoc('byTimer', position);
-        },
-        (error) => alert(JSON.stringify(error)),
-        this.props.trackingOptions
-      );
+      if(this.props.active){
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            this.setLoc('byTimer', position);
+          },
+          (error) => alert(JSON.stringify(error)),
+          this.props.trackingOptions
+        );
+      }
     }, this.props.interval);
   }
 
   byDistanceTracking() {
     this.watchId = navigator.geolocation.watchPosition(
       (position) => {
-        console.log(this.props.distance + 'm');
-        this.setLoc('byDistance', position)
+        if(this.props.active){
+          console.log(this.props.distance + 'm');
+          this.setLoc('byDistance', position)
+        }
       },
       (error) => this.setState({ error: error.message }),
       {
